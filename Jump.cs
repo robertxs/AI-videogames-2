@@ -10,12 +10,12 @@ public class Jump : MonoBehaviour {
 	}
 
     private float speed = 270.8f;
-
+    public bool executejump = false;
 
     private void Update()
     {
 
-        if (Input.GetButton("Jump") && transform.position.y < 10 && transform.position.y <= 4)
+        if ((Input.GetButton("Jump") || executejump == true) && transform.position.y < 10 && transform.position.y <= 4)
         {
             if (transform.rotation.eulerAngles.y >= 0 && transform.rotation.eulerAngles.y < 45)
             { 
@@ -33,12 +33,14 @@ public class Jump : MonoBehaviour {
             {
                 transform.position += new Vector3(0, 1 * speed, 170) * Time.deltaTime;
             }
+            
         }
         else {
             if (transform.position.y > 4)
             {
                 transform.position += Vector3.up * -12.8f * Time.deltaTime;
             }
+            executejump = false;
         }
 
 

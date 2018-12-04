@@ -9,66 +9,114 @@ public class StatesMachine : MonoBehaviour {
 
     State currentState = null;
 
-    //actions
-    goDrink drink = new goDrink();
-    followRed followR = new followRed();
+   
 
-    //conditions
-    RedisDrinkingWaterCondition condition1 = new RedisDrinkingWaterCondition();
-    RedisnotDrinkingWaterCondition condition2 = new RedisnotDrinkingWaterCondition();
+    
 
     void Start()
-    {   
+    {
+        //actions
+        goDrink drink = new goDrink();
+        goFire fire = new goFire();
+        jumpAndPlayBall play = new jumpAndPlayBall();
+        goEat eat = new goEat();
+
+        //conditions
+        RedisDrinkingWaterCondition condition1 = new RedisDrinkingWaterCondition();
+        RedisnotDrinkingWaterCondition condition2 = new RedisnotDrinkingWaterCondition();
+        RedisplayingBallCondition condition3 = new RedisplayingBallCondition();
+        Rediseating condition4 = new Rediseating();
+
         //transitions
         Transition seeRedDragondrinking = new Transition();
         Transition seeRedDragonleavingwaterplace = new Transition();
+        Transition seeRedPlayingBall = new Transition();
+        Transition seeRedEating = new Transition();
 
         //states
         State initialState = new State();
-        initialState.action = -1;
+        initialState.action = null;
         initialState.transitions.Add(seeRedDragondrinking);
 
         State drinking = new State();
-        drinking.action = 1;
+        drinking.action = drink;
         drinking.transitions.Add(seeRedDragonleavingwaterplace);
 
-        State followingRed = new State();
-        followingRed.action = 2;
-        followingRed.transitions.Add(seeRedDragonleavingwaterplace);
+        State stayingAtFire = new State();
+        stayingAtFire.action = fire;
+        stayingAtFire.transitions.Add(seeRedPlayingBall);
+        stayingAtFire.transitions.Add(seeRedEating);
+
+        State playingBall = new State();
+        playingBall.action = play;
+        playingBall.transitions.Add(seeRedPlayingBall);
+        playingBall.transitions.Add(seeRedEating);
+
+        State eating = new State();
+        eating.action = eat;
+        eating.transitions.Add(seeRedPlayingBall);
 
 
         seeRedDragondrinking.targetState = drinking;
-        seeRedDragondrinking.condition = 1;
+        seeRedDragondrinking.condition = condition1;
 
-        seeRedDragonleavingwaterplace.targetState = followingRed;
-        seeRedDragonleavingwaterplace.condition = 2;
+        seeRedDragonleavingwaterplace.targetState = stayingAtFire;
+        seeRedDragonleavingwaterplace.condition = condition2;
+
+        seeRedPlayingBall.targetState = playingBall;
+        seeRedPlayingBall.condition = condition3;
+
+        seeRedEating.targetState = eating;
+        seeRedEating.condition = condition4;
 
         currentState = initialState;
     }
 
-    public class goDrink{
-        public object run(FollowMesh follow)
+    public abstract class Action
+    {
+        public abstract void run(FollowMesh follow);
+       
+    }
+
+    public class goDrink : Action{
+        public override void run(FollowMesh follow)
         {   
             follow.end = 14;
             follow.Go(follow.SmallDragon);
-            return null;
         }
     }
 
-    public class followRed
+    public class goFire : Action
     {
-        public object run(FollowMesh follow)
+        public override void run(FollowMesh follow)
         {
             follow.end = 131; 
             follow.Go(follow.SmallDragon);
-            return null;
+        }
+    }
+
+    public class jumpAndPlayBall : Action
+    {
+        public override void run(FollowMesh follow)
+        {
+            follow.SmallDragon.transform.rotation = Quaternion.Slerp(follow.SmallDragon.transform.rotation, Quaternion.LookRotation(follow.Ball.transform.position - follow.SmallDragon.transform.position), 0.04F);
+            follow.SmallDragon.GetComponent<Jump>().executejump = true;       
+        }
+    }
+
+    public class goEat : Action
+    {
+        public override void run(FollowMesh follow)
+        {
+            follow.end = 177;
+            follow.Go(follow.SmallDragon);
         }
     }
 
     public class State {
-        public int action;
+        public Action action;
         
-        public int getAction() {
+        public Action getAction() {
             return action;
         }
 
@@ -85,13 +133,19 @@ public class StatesMachine : MonoBehaviour {
             return targetState;
         }
 
-        public int condition;
+        public Condition condition;
      
     }
 
-    public class RedisDrinkingWaterCondition{
+    public abstract class Condition
+    {
+        public abstract bool test(FollowMesh follow);
+    }
+
+    public class RedisDrinkingWaterCondition : Condition
+        {
         
-        public bool test(FollowMesh follow) {
+        public override bool test(FollowMesh follow) {
 
             if ((follow.getDragonNode(follow.RedDragon) == 14 || follow.getDragonNode(follow.RedDragon) == 15 || follow.getDragonNode(follow.RedDragon) == 16 || follow.getDragonNode(follow.RedDragon) == 17) && follow.canbeupdated == true)
             {
@@ -101,10 +155,10 @@ public class StatesMachine : MonoBehaviour {
         }
     }
 
-    public class RedisnotDrinkingWaterCondition
-    {
+    public class RedisnotDrinkingWaterCondition : Condition
+        {
 
-        public bool test(FollowMesh follow)
+        public override bool test(FollowMesh follow)
         {
 
             if ((follow.getDragonNode(follow.RedDragon) != 14 && follow.getDragonNode(follow.RedDragon) != 15 && follow.getDragonNode(follow.RedDragon) != 16 && follow.getDragonNode(follow.RedDragon) != 17) && follow.canbeupdated == true)
@@ -115,6 +169,33 @@ public class StatesMachine : MonoBehaviour {
         }
     }
 
+    public class RedisplayingBallCondition : Condition
+    {
+
+        public override bool test(FollowMesh follow)
+        {
+
+            if ((follow.getDragonNode(follow.RedDragon) == follow.getDragonNode(follow.Ball) || follow.getDragonNode(follow.RedDragon) == follow.getDragonNode(follow.Ball)+1 || follow.getDragonNode(follow.RedDragon) == follow.getDragonNode(follow.Ball)-1) && follow.canbeupdated == true)
+            {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    public class Rediseating : Condition
+    {
+
+        public override bool test(FollowMesh follow)
+        {
+
+            if ((follow.getDragonNode(follow.RedDragon) == 177) && follow.canbeupdated == true)
+            {
+                return true;
+            }
+            return false;
+        }
+    }
 
     // Update is called once per frame
     void Update()
@@ -122,22 +203,12 @@ public class StatesMachine : MonoBehaviour {
         foreach (Transition transition in currentState.getTransitions())
         {
 
-            if (transition.condition == 1 && condition1.test(smallfollow) == true)
+            if (transition.condition.test(smallfollow) == true)
             {
                 currentState = transition.targetState;
-                if (currentState.action == 1)
-                {
-                    drink.run(smallfollow);
-                }
+                currentState.action.run(smallfollow);
             }
-            else if (transition.condition == 2 && condition2.test(smallfollow) == true && (smallfollow.getDragonNode(smallfollow.SmallDragon)!=131))
-            {
-                currentState = transition.targetState;
-                if (currentState.action == 2)
-                {
-                    followR.run(smallfollow);
-                }
-            }
+            
         }
      
     }

@@ -24,6 +24,7 @@ public class FollowMesh : MonoBehaviour {
     public GameObject RedDragon;
     public GameObject DarkDragon;
     public GameObject SmallDragon;
+    public GameObject Ball;
     //--------------------------------------
 
 
@@ -294,6 +295,7 @@ public class FollowMesh : MonoBehaviour {
 
     public int currentPathNode = 0;
     public bool canbeupdated = true;
+    public float speed = 8f;
 
     public void Update()
     {
@@ -308,7 +310,7 @@ public class FollowMesh : MonoBehaviour {
             target = followPath[currentPathNode];
           
             dragon.transform.rotation = Quaternion.Slerp(dragon.transform.rotation, Quaternion.LookRotation(target - dragon.transform.position), 0.03F);
-            float speed = 8f;
+            
             if (currentPathNode == followPath.Count - 1)
                 dragon.transform.Translate((target - dragon.transform.position).normalized * Time.deltaTime * speed / 2, Space.World);
             else
